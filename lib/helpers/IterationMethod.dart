@@ -1,11 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter_beacon/flutter_beacon.dart';
+import 'package:location_via_ble_app/helpers/GeneralHelper.dart';
 import 'package:location_via_ble_app/models/BeceonLocationModel.dart';
 import 'package:logger/logger.dart';
 import 'package:vector_math/vector_math_64.dart';
 
-class CalculationCoordinateHelper3 {
+class IterationMethod {
   //default values
   static double _x0 = 1.0;
   static double _y0 = 2.0;
@@ -14,20 +15,10 @@ class CalculationCoordinateHelper3 {
   //error probability
   static const double errorRate = 0.000001;
 
-  static List<List<double>> calculateLocation(List<Beacon> beacons) {
+  static Vector2 calculateLocation(List<Beacon> beacons) {
     List<List<double>> xyzCoordinates = [];
-    List<LocationModel> beaconLocations = [];
-    for (var e in beacons) {
-      LocationModel location = LocationModel.beaconsCoordinates[e.macAddress]!;
-      beaconLocations.add(
-        LocationModel(
-          xCoordinate: location.xCoordinate,
-          yCoordinate: location.yCoordinate,
-          zCoordinate: location.zCoordinate,
-          distance: e.accuracy,
-        ),
-      );
-    }
+    List<LocationModel> beaconLocations = GeneralHelper.getBeaconCoordinates(beacons);
+
     for (int i = 0; i < beaconLocations.length; i++) {
       for (int j = i + 1; j < beaconLocations.length; j++) {
         for (int k = j + 1; k < beaconLocations.length; k++) {
@@ -37,7 +28,7 @@ class CalculationCoordinateHelper3 {
       }
     }
 
-    return xyzCoordinates;
+    return GeneralHelper.getAverageCoordinates(xyzCoordinates);
   }
 
   static List<double> _calculateCoordinates(LocationModel beacon1, LocationModel beacon2, LocationModel beacon3) {
@@ -61,13 +52,13 @@ class CalculationCoordinateHelper3 {
   static double _delta(LocationModel beacon1, LocationModel beacon2, LocationModel beacon3) {
     Matrix3 delta = Matrix3(
       2 * (_x0 - beacon1.xCoordinate),
-      2 * (_y0 - beacon1.yCoordinate),
-      2 * (_z0 - beacon1.zCoordinate),
       2 * (_x0 - beacon2.xCoordinate),
-      2 * (_y0 - beacon2.yCoordinate),
-      2 * (_z0 - beacon2.zCoordinate),
       2 * (_x0 - beacon3.xCoordinate),
+      2 * (_y0 - beacon1.yCoordinate),
+      2 * (_y0 - beacon2.yCoordinate),
       2 * (_y0 - beacon3.yCoordinate),
+      2 * (_z0 - beacon1.zCoordinate),
+      2 * (_z0 - beacon2.zCoordinate),
       2 * (_z0 - beacon3.zCoordinate),
     );
     return delta.determinant();
@@ -80,21 +71,21 @@ class CalculationCoordinateHelper3 {
           pow((_z0 - beacon1.zCoordinate), 2) -
           pow((beacon1.distance ?? 0.0), 2))
           .toDouble(),
-      2 * (_y0 - beacon1.yCoordinate),
-      2 * (_z0 - beacon1.zCoordinate),
       (pow((_x0 - beacon2.xCoordinate), 2) +
           pow((_y0 - beacon2.yCoordinate), 2) +
           pow((_z0 - beacon2.zCoordinate), 2) -
           pow((beacon2.distance ?? 0.0), 2))
           .toDouble(),
-      2 * (_y0 - beacon2.yCoordinate),
-      2 * (_z0 - beacon2.zCoordinate),
       (pow((_x0 - beacon3.xCoordinate), 2) +
           pow((_y0 - beacon3.yCoordinate), 2) +
           pow((_z0 - beacon3.zCoordinate), 2) -
           pow((beacon3.distance ?? 0.0), 2))
           .toDouble(),
+      2 * (_y0 - beacon1.yCoordinate),
+      2 * (_y0 - beacon2.yCoordinate),
       2 * (_y0 - beacon3.yCoordinate),
+      2 * (_z0 - beacon1.zCoordinate),
+      2 * (_z0 - beacon2.zCoordinate),
       2 * (_z0 - beacon3.zCoordinate),
     );
 
@@ -104,25 +95,25 @@ class CalculationCoordinateHelper3 {
   static double _deltaY(LocationModel beacon1, LocationModel beacon2, LocationModel beacon3) {
     Matrix3 deltaY = Matrix3(
       2 * (_x0 - beacon1.xCoordinate),
+      2 * (_x0 - beacon2.xCoordinate),
+      2 * (_x0 - beacon3.xCoordinate),
       (pow((_x0 - beacon1.xCoordinate), 2) +
           pow((_y0 - beacon1.yCoordinate), 2) +
           pow((_z0 - beacon1.zCoordinate), 2) -
           pow((beacon1.distance ?? 0.0), 2))
           .toDouble(),
-      2 * (_z0 - beacon1.zCoordinate),
-      2 * (_x0 - beacon2.xCoordinate),
       (pow((_x0 - beacon2.xCoordinate), 2) +
           pow((_y0 - beacon2.yCoordinate), 2) +
           pow((_z0 - beacon2.zCoordinate), 2) -
           pow((beacon2.distance ?? 0.0), 2))
           .toDouble(),
-      2 * (_z0 - beacon2.zCoordinate),
-      2 * (_x0 - beacon3.xCoordinate),
       (pow((_x0 - beacon3.xCoordinate), 2) +
           pow((_y0 - beacon3.yCoordinate), 2) +
           pow((_z0 - beacon3.zCoordinate), 2) -
           pow((beacon3.distance ?? 0.0), 2))
           .toDouble(),
+      2 * (_z0 - beacon1.zCoordinate),
+      2 * (_z0 - beacon2.zCoordinate),
       2 * (_z0 - beacon3.zCoordinate),
     );
     return deltaY.determinant();
@@ -131,21 +122,21 @@ class CalculationCoordinateHelper3 {
   static double _deltaZ(LocationModel beacon1, LocationModel beacon2, LocationModel beacon3) {
     Matrix3 deltaZ = Matrix3(
       2 * (_x0 - beacon1.xCoordinate),
+      2 * (_x0 - beacon2.xCoordinate),
+      2 * (_x0 - beacon3.xCoordinate),
       2 * (_y0 - beacon1.yCoordinate),
+      2 * (_y0 - beacon2.yCoordinate),
+      2 * (_y0 - beacon3.zCoordinate),
       (pow((_x0 - beacon1.xCoordinate), 2) +
           pow((_y0 - beacon1.yCoordinate), 2) +
           pow((_z0 - beacon1.zCoordinate), 2) -
           pow((beacon1.distance ?? 0.0), 2))
           .toDouble(),
-      2 * (_x0 - beacon2.xCoordinate),
-      2 * (_y0 - beacon2.yCoordinate),
       (pow((_x0 - beacon2.xCoordinate), 2) +
           pow((_y0 - beacon2.yCoordinate), 2) +
           pow((_z0 - beacon2.zCoordinate), 2) -
           pow((beacon2.distance ?? 0.0), 2))
           .toDouble(),
-      2 * (_x0 - beacon3.xCoordinate),
-      2 * (_z0 - beacon3.zCoordinate),
       (pow((_x0 - beacon3.xCoordinate), 2) +
           pow((_y0 - beacon3.yCoordinate), 2) +
           pow((_z0 - beacon3.zCoordinate), 2) -

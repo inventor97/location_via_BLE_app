@@ -1,18 +1,22 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+
 class LocationModel {
   LocationModel({
     required this.xCoordinate,
     required this.yCoordinate,
     required this.zCoordinate,
     this.distance,
+    this.color,
   });
 
   final double xCoordinate;
   final double yCoordinate;
   final double zCoordinate;
   final double? distance;
+  final Color? color;
 
   factory LocationModel.fromJson(Map<String, dynamic> json) => LocationModel(
         xCoordinate: json["longitude"],
@@ -31,22 +35,26 @@ class LocationModel {
     "DC:0D:30:0F:AC:34": LocationModel(
       xCoordinate: 10,
       yCoordinate: 300,
-      zCoordinate: 74,
+      zCoordinate: 64,
+      color: Colors.green
     ),
     "DC:0D:30:0F:AC:25": LocationModel(
       xCoordinate: 133.0,
       yCoordinate: 601.0,
-      zCoordinate: 72,
+      zCoordinate: 62,
+      color : Colors.yellow
     ),
     "DC:0D:30:0F:AB:8B": LocationModel(
       xCoordinate: 324.0,
       yCoordinate: 401.0,
-      zCoordinate: 71,
+      zCoordinate: 61,
+      color: Colors.orange
     ),
     "DC:0D:30:0F:AB:97": LocationModel(
       xCoordinate: 451,
       yCoordinate: 601,
-      zCoordinate: 73,
+      zCoordinate: 63,
+      color: Colors.red
     ),
   };
 

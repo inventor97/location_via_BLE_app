@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_beacon/flutter_beacon.dart';
 import 'package:get/get.dart';
-import 'package:location_via_ble_app/helpers/CalculationCoordinateHelper.dart';
+import 'package:location_via_ble_app/helpers/Iteration4Method.dart';
+import 'package:location_via_ble_app/helpers/IterationMethod.dart';
 import 'package:location_via_ble_app/models/BeceonLocationModel.dart';
 import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -13,7 +14,7 @@ class HomeController extends BaseController {
   final beacons = <LocationModel>[].obs;
 
   StreamSubscription<RangingResult>? _streamRanging;
-  final _regionBeacons = <Region, Beacon>{};
+  final regionBeacons = <Region, Beacon>{};
   final _beacons = <Beacon>[];
   final _beaconRSSIs = <int>[].obs;
   final xCoordinate = 0.0.obs;
@@ -46,20 +47,19 @@ class HomeController extends BaseController {
       ),
     ];
 
-    await flutterBeacon.setScanPeriod(100);
+    await flutterBeacon.setScanPeriod(1000);
 
     _streamRanging = flutterBeacon.ranging(regions).listen((RangingResult result) {
       if (result.beacons.isNotEmpty) {
-        _regionBeacons[result.region] = result.beacons.first;
-        Logger().w("${result.beacons.first.macAddress} -> ${result.beacons.first.accuracy}");
+        regionBeacons[result.region] = result.beacons.first;
         // _regionBeacons.values.forEach((list) {
         //   _beacons.addAll(list);
         //
         // });
 
-        if (_regionBeacons.length >= 4) {
-          // xCoordinate.value = CalculationCoordinateHelper.calculateLocation(List<Beacon>.from(_regionBeacons.values.map((e) => e)))[0][0];
-          // yCoordinate.value = CalculationCoordinateHelper.calculateLocation(List<Beacon>.from(_regionBeacons.values.map((e) => e)))[1][1];
+        if (regionBeacons.length >= 4) {
+          xCoordinate.value = IterationMethod.calculateLocation(List<Beacon>.from(regionBeacons.values.map((e) => e))).x;
+          yCoordinate.value = IterationMethod.calculateLocation(List<Beacon>.from(regionBeacons.values.map((e) => e))).y;
         }
         _beacons.clear();
         // _beaconRSSIs.add(result.beacons.)
