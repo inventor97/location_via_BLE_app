@@ -1,67 +1,154 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_beacon/flutter_beacon.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 import 'package:get/get.dart';
-import 'package:location_via_ble_app/helpers/Iteration4Method.dart';
-import 'package:location_via_ble_app/helpers/IterationMethod.dart';
-import 'package:location_via_ble_app/models/BeceonLocationModel.dart';
+import 'package:location_via_ble_app/helpers/CustomMethod.dart';
+import 'package:location_via_ble_app/services/StorageService.dart';
 import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+import 'package:vector_math/vector_math_64.dart' as math;
 
 import '../../BaseController.dart';
 
-class HomeController extends BaseController {
-  final beacons = <LocationModel>[].obs;
+class HomeController extends BaseController with GetSingleTickerProviderStateMixin {
+  final direction = 0.0.obs;
+  final angleByNorth = 253;
+
+  final double pxMetersCoeffisent = 0.4706;
+  final startXCoordinate = 50;
+  final startYCoordinate = 200;
+
+  final storage = Get.find<StorageService>();
+
+  late AnimationController animationCtrl;
+
+  final colorData = Colors.grey.obs;
 
   StreamSubscription<RangingResult>? _streamRanging;
-  final regionBeacons = <Region, Beacon>{};
+  Map<String, List<Beacon>> regionBeacons = {
+    "DC:0D:30:0F:AC:34": [],
+    "DC:0D:30:0F:AC:25": [],
+    "DC:0D:30:0F:AB:8B": [],
+    "DC:0D:30:0F:AB:97": [],
+    // "CF:E1:37:E3:F9:BF": [],
+    // "ED:90:C1:6E:7F:22": [],
+    // "D6:3A:3D:19:BE:DD": [],
+  };
   final _beacons = <Beacon>[];
-  final _beaconRSSIs = <int>[].obs;
+  final beaconData = <String, Beacon>{}.obs;
   final xCoordinate = 0.0.obs;
   final yCoordinate = 0.0.obs;
+  final zCoordinate = 0.0.obs;
+
+  final isScanning = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     permission();
+    animationCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+      upperBound: 0.5,
+    );
+
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    FlutterCompass.events?.listen((event) {
+      direction.value = event.heading ?? 0.0;
+    });
+    for (var element in storage.beacons) {
+      element.color = colorMap()[element.name];
+    }
+    Logger().i(storage.beacons);
+  }
+
+  void initSensors() {
+    accelerometerEvents.listen((AccelerometerEvent event) {
+      Logger().w(event);
+    });
+// [AccelerometerEvent (x: 0.0, y: 9.8, z: 0.0)]
+
+    userAccelerometerEvents.listen((UserAccelerometerEvent event) {
+      Logger().w(print);
+    });
+// [UserAccelerometerEvent (x: 0.0, y: 0.0, z: 0.0)]
+
+    gyroscopeEvents.listen((GyroscopeEvent event) {
+      Logger().w(event);
+    });
+// [GyroscopeEvent (x: 0.0, y: 0.0, z: 0.0)]
+
+    magnetometerEvents.listen((MagnetometerEvent event) {
+      Logger().w(event);
+    });
   }
 
   initScanBeacon() async {
     await flutterBeacon.initializeScanning;
-    final regions = <Region>[
-      Region(
-        identifier: 'RED',
-        proximityUUID: 'd546df97-4757-47ef-be09-3e2dcbdd0c98',
-      ),
-      Region(
-        identifier: 'GREEN',
-        proximityUUID: 'edbddddd-dbde-dcfc-bfbc-dddddbffbcbd',
-      ),
-      Region(
-        identifier: 'YELLOW',
-        proximityUUID: 'd546df97-4757-47ef-be09-3e2dcbdd0c77',
-      ),
-      Region(
-        identifier: 'ORANGE',
-        proximityUUID: 'fda50693-a4e2-4fb1-afcf-c6eb07647825',
-      ),
-    ];
+    final regions = List<Region>.from(
+      storage.beacons.map((element) => Region(identifier: element.name!, proximityUUID: element.uuid!)),
+    );
+    regions.forEach((element) {
+      Logger().i(element.proximityUUID);
+    });
+    isScanning.value = true;
+    await flutterBeacon.setScanPeriod(100);
 
-    await flutterBeacon.setScanPeriod(1000);
-
-    _streamRanging = flutterBeacon.ranging(regions).listen((RangingResult result) {
+    _streamRanging = flutterBeacon.ranging(regions).listen((RangingResult result) async {
+      // Logger().w(result.beacons);
       if (result.beacons.isNotEmpty) {
-        regionBeacons[result.region] = result.beacons.first;
-        // _regionBeacons.values.forEach((list) {
-        //   _beacons.addAll(list);
-        //
-        // });
+        regionBeacons[result.beacons.first.macAddress!]!.add(result.beacons.first);
 
-        if (regionBeacons.length >= 4) {
-          xCoordinate.value = IterationMethod.calculateLocation(List<Beacon>.from(regionBeacons.values.map((e) => e))).x;
-          yCoordinate.value = IterationMethod.calculateLocation(List<Beacon>.from(regionBeacons.values.map((e) => e))).y;
+        if (regionBeacons.values.every((element) => element.length > 5)) {
+          List<Beacon> averageCalculatedBeacons = [];
+          for (var e in regionBeacons.values) {
+            // int rssiDerivation = GeneralHelper.getDerivation(List.from(e.map((e) => e.accuracy.toDouble()))).toInt();
+            // int rssiAverage = GeneralHelper.getAverage(List.from(e.map((e) => e.accuracy.toDouble()))).toInt();
+            //
+            // e.removeWhere((el) => el.accuracy <= (rssiAverage - 2 * rssiDerivation));
+            // e.removeWhere((el) => el.accuracy >= (rssiAverage + 2 * rssiDerivation));
+            double averageRSSI = List<double>.from(e.map((e) => e.accuracy.toDouble())).reduce((value, element) => value + element) / e.length;
+
+            averageCalculatedBeacons.add(Beacon(
+              proximityUUID: e.first.proximityUUID,
+              major: e.first.major,
+              minor: e.first.minor,
+              accuracy: averageRSSI,
+              macAddress: e.first.macAddress,
+              txPower: e.first.txPower,
+              rssi: e.first.rssi,
+            ));
+          }
+
+          Beacon nearestBeacon = averageCalculatedBeacons.reduce((value, element) => value.accuracy < element.accuracy ? value : element);
+
+
+          colorData.value = nearestBeacon.accuracy < 1 ? uuidColorMap()[nearestBeacon.macAddress] ?? Colors.grey : Colors.grey;
+
+          math.Vector3 location = await CustomMethod.calculateLocation(averageCalculatedBeacons, nearestBeacon);
+          xCoordinate.value = startXCoordinate + location.x * pxMetersCoeffisent;
+          yCoordinate.value = startYCoordinate + location.y * pxMetersCoeffisent;
+
+          Logger().i("${xCoordinate.value} - ${yCoordinate.value}");
+
+          regionBeacons = {
+            "DC:0D:30:0F:AC:34": [],
+            "DC:0D:30:0F:AC:25": [],
+            "DC:0D:30:0F:AB:8B": [],
+            "DC:0D:30:0F:AB:97": [],
+            // "CF:E1:37:E3:F9:BF": [],
+            // "ED:90:C1:6E:7F:22": [],
+            // "D6:3A:3D:19:BE:DD": [],
+          };
         }
-        _beacons.clear();
         // _beaconRSSIs.add(result.beacons.)
         // _beacons.sort(_compareParameters);
       }
@@ -69,10 +156,30 @@ class HomeController extends BaseController {
   }
 
   pauseScanBeacon() async {
+    isScanning.value = false;
     _streamRanging?.pause();
     if (_beacons.isNotEmpty) {
       _beacons.clear();
     }
+  }
+
+  uuidColorMap() => {
+  "DC:0D:30:0F:AC:34": Colors.green,
+  "DC:0D:30:0F:AC:25": Colors.yellow,
+  "DC:0D:30:0F:AB:8B": Colors.orange,
+  "DC:0D:30:0F:AB:97": Colors.red,
+  // "CF:E1:37:E3:F9:BF": [],
+  // "ED:90:C1:6E:7F:22": [],
+  // "D6:3A:3D:19:BE:DD": [],
+  };
+
+  colorMap() {
+    return {
+      "ORANGE": Colors.orange,
+      "RED": Colors.red,
+      "GREEN": Colors.green,
+      "YELLOW": Colors.yellow,
+    };
   }
 
   @override
@@ -82,11 +189,23 @@ class HomeController extends BaseController {
   }
 
   void permission() async {
-    await Permission.location.request().isGranted;
-    await Permission.bluetooth.request().isGranted;
-    await Permission.locationAlways.request().isGranted;
-    await Permission.bluetoothScan.request().isGranted;
-    await Permission.bluetoothAdvertise.request().isGranted;
-    await Permission.bluetoothConnect.request().isGranted;
+    await Permission.location
+        .request()
+        .isGranted;
+    await Permission.bluetooth
+        .request()
+        .isGranted;
+    await Permission.locationAlways
+        .request()
+        .isGranted;
+    await Permission.bluetoothScan
+        .request()
+        .isGranted;
+    await Permission.bluetoothAdvertise
+        .request()
+        .isGranted;
+    await Permission.bluetoothConnect
+        .request()
+        .isGranted;
   }
 }
