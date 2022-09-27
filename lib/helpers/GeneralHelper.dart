@@ -2,19 +2,21 @@ import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_beacon/flutter_beacon.dart';
-import 'package:location_via_ble_app/helpers/IterationMethod.dart';
+import 'package:get/get.dart';
 import 'package:location_via_ble_app/models/BeaconLocationModel.dart';
-import 'package:logger/logger.dart';
+import 'package:location_via_ble_app/services/StorageService.dart';
 import 'package:vector_math/vector_math_64.dart';
 
 class GeneralHelper {
 
   static const platform = MethodChannel('BEACONS');
 
-  static List<BeaconLocationModel> getBeaconCoordinates(List<Beacon> beacons) {
+  static final storage  = Get.find<StorageService>();
+
+  static List<BeaconLocationModel> getBeaconCoordinates(List<Beacon> scannedBeacons) {
     List<BeaconLocationModel> beaconLocations = [];
-    for (var e in beacons) {
-      BeaconLocationModel location = BeaconLocationModel.beaconsCoordinates[e.macAddress]!;
+    for (var e in scannedBeacons) {
+      BeaconLocationModel location = storage.beacons.firstWhere((element) => element.macAddress == e.macAddress);
       beaconLocations.add(
         BeaconLocationModel(
           xCoordinate: location.xCoordinate,

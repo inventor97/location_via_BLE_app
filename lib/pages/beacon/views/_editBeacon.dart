@@ -60,6 +60,13 @@ class EditBeacon extends StatelessWidget with PreferredSizeWidget {
               inputFormatters: [controller.uuidMask],
               textCapitalization: TextCapitalization.characters,
             ),
+            CustomInput(
+              labelText: "MAC Address",
+              validator: controller.validateMAC,
+              controller: controller.mac,
+              inputFormatters: [controller.macAddressMask],
+              textCapitalization: TextCapitalization.characters,
+            ),
             ElevatedButton(
               onPressed: controller.addBeacon,
               child: const Text("Add new Beacon"),
@@ -71,5 +78,5 @@ class EditBeacon extends StatelessWidget with PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(358);
+  Size get preferredSize => const Size.fromHeight(380);
 }

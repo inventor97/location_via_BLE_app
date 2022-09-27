@@ -14,21 +14,24 @@ class BeaconController extends BaseController {
   final TextEditingController yCoordinate = TextEditingController();
   final TextEditingController zCoordinate = TextEditingController();
   final TextEditingController uuid = TextEditingController();
+  final TextEditingController mac = TextEditingController();
   var uuidMask = MaskTextInputFormatter(mask: '########-####-####-####-############', filter: {"#": RegExp(r'[0-9a-fA-F]')});
+  var macAddressMask = MaskTextInputFormatter(mask: '##:##:##:##:##:##', filter: {"#": RegExp(r'[0-9a-fA-F]')});
 
   final formKey = GlobalKey<FormState>();
 
   void addBeacon() {
-    if(formKey.currentState!.validate()) {
-      if(storage.beacons.every((p0) => p0.uuid != uuid.text)) {
+    if (formKey.currentState!.validate()) {
+      if (storage.beacons.every((p0) => p0.uuid != uuid.text)) {
         try {
           storage.beacons.add(BeaconLocationModel(
-            name: beaconName.text,
-            xCoordinate: double.parse(xCoordinate.text),
-            yCoordinate: double.parse(yCoordinate.text),
-            zCoordinate: double.parse(zCoordinate.text),
-            uuid: uuid.text,
-          ));
+              name: beaconName.text,
+              xCoordinate: double.parse(xCoordinate.text),
+              yCoordinate: double.parse(yCoordinate.text),
+              zCoordinate: double.parse(zCoordinate.text),
+              uuid: uuid.text,
+              macAddress: mac.text,
+          ),);
         } catch (e) {
           Get.snackbar("Error", e.toString());
         } finally {
@@ -37,6 +40,7 @@ class BeaconController extends BaseController {
           yCoordinate.text = "";
           zCoordinate.text = "";
           uuid.text = "";
+          mac.text = "";
           storage.saveBeacons();
         }
       } else {
@@ -52,6 +56,7 @@ class BeaconController extends BaseController {
     yCoordinate.text = beacon.yCoordinate.toString();
     zCoordinate.text = beacon.zCoordinate.toString();
     uuid.text = beacon.uuid ?? "";
+    mac.text = beacon.macAddress ?? "";
   }
 
   String? validate(String? value) {
@@ -69,6 +74,16 @@ class BeaconController extends BaseController {
       return null;
     } else {
       return 'invalid uuid';
+    }
+  }
+
+  String? validateMAC(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'required field';
+    } else if (RegExp(r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$').hasMatch(value)) {
+      return null;
+    } else {
+      return 'invalid mac';
     }
   }
 }

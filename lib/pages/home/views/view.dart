@@ -30,19 +30,19 @@ class HomePage extends GetView<HomeController> {
               ),
             ),
             AnimatedRotatableContainer(
-              // angle: 180 - (controller.direction.value - controller.angleByNorth),
-              angle: 0,
+              angle: 180 - (controller.direction.value - controller.angleByNorth),
+              // angle: 0,
               child: SizedBox(
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.height,
                 child: Stack(
                   children: [
-                    Positioned(
-                      // duration: const Duration(milliseconds: 500),
-                      bottom: 0,
-                      left: 0,
-                      // bottom: controller.yCoordinate > 0 ? (MediaQuery.of(context).size.height * 0.48) - controller.yCoordinate.value : 0,
-                      // left: controller.xCoordinate > 0 ? (MediaQuery.of(context).size.width * 0.48) - controller.xCoordinate.value : 0,
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 500),
+                      // bottom: 0,
+                      // left: 0,
+                      bottom: controller.yCoordinate > 0 ? (MediaQuery.of(context).size.height * 0.48) - controller.yCoordinate.value : 0,
+                      left: controller.xCoordinate > 0 ? (MediaQuery.of(context).size.width * 0.48) - controller.xCoordinate.value : 0,
                       child: SizedBox(
                         width: MediaQuery.of(context).size.width,
                         height: MediaQuery.of(context).size.height,
@@ -51,8 +51,8 @@ class HomePage extends GetView<HomeController> {
                             ...controller.storage.beacons
                                 .map(
                                   (e) => Positioned(
-                                    bottom: controller.startYCoordinate + (e.yCoordinate * controller.pxMetersCoeffisent),
-                                    left: controller.startXCoordinate + (e.xCoordinate * controller.pxMetersCoeffisent),
+                                    bottom: controller.startYCoordinate + (e.yCoordinate * controller.pxMetersCoefficient),
+                                    left: controller.startXCoordinate + (e.xCoordinate * controller.pxMetersCoefficient),
                                     child: BeaconItem(
                                       color: e.color ?? Colors.lightBlueAccent,
                                       distance: e.distance ?? 0.0,
@@ -68,12 +68,12 @@ class HomePage extends GetView<HomeController> {
                 ),
               ),
             ),
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 500),
-              // bottom: MediaQuery.of(context).size.height * 0.48,
-              // left: MediaQuery.of(context).size.width * 0.48,
-              bottom: controller.yCoordinate.value ,
-              left:  controller.xCoordinate.value,
+            Positioned(
+              // duration: const Duration(milliseconds: 500),
+              bottom: MediaQuery.of(context).size.height * 0.48,
+              left: MediaQuery.of(context).size.width * 0.48,
+              // bottom: controller.yCoordinate.value,
+              // left:  controller.xCoordinate.value,
               child: const BeaconItem(
                 color: Colors.black,
                 radius: 28,
@@ -140,10 +140,6 @@ class HomePage extends GetView<HomeController> {
               child: ElevatedButton(
                 onPressed: () {
                   controller.isScanning.value ? controller.pauseScanBeacon() : controller.initScanBeacon();
-                  // controller.initSensors();
-                  // controller.initBlueScanning();
-                  // Logger().w("${MediaQuery.of(context).size.height * 0.48} ${MediaQuery.of(context).size.width * 0.48}");
-                  // CustomMethod.calculateLeastNearing(math.Vector3(9, 1, 0), BeaconLocationModel(xCoordinate: 4, yCoordinate: 5, zCoordinate: 0, distance: 3));
                 },
                 child: controller.isScanning.value ? const Text("Stop Scanning") : const Text("Start Scanning"),
               ),

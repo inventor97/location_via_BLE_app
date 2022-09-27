@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_beacon/flutter_beacon.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:get/get.dart';
@@ -9,7 +8,6 @@ import 'package:location_via_ble_app/helpers/CustomMethod.dart';
 import 'package:location_via_ble_app/services/StorageService.dart';
 import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:sensors_plus/sensors_plus.dart';
 import 'package:vector_math/vector_math_64.dart' as math;
 
 import '../../BaseController.dart';
@@ -18,7 +16,7 @@ class HomeController extends BaseController with GetSingleTickerProviderStateMix
   final direction = 0.0.obs;
   final angleByNorth = 253;
 
-  final double pxMetersCoeffisent = 0.4706;
+  final double pxMetersCoefficient = 0.4706;
   final startXCoordinate = 50;
   final startYCoordinate = 200;
 
@@ -34,9 +32,6 @@ class HomeController extends BaseController with GetSingleTickerProviderStateMix
     "DC:0D:30:0F:AC:25": [],
     "DC:0D:30:0F:AB:8B": [],
     "DC:0D:30:0F:AB:97": [],
-    // "CF:E1:37:E3:F9:BF": [],
-    // "ED:90:C1:6E:7F:22": [],
-    // "D6:3A:3D:19:BE:DD": [],
   };
   final _beacons = <Beacon>[];
   final beaconData = <String, Beacon>{}.obs;
@@ -70,40 +65,16 @@ class HomeController extends BaseController with GetSingleTickerProviderStateMix
     Logger().i(storage.beacons);
   }
 
-  void initSensors() {
-    accelerometerEvents.listen((AccelerometerEvent event) {
-      Logger().w(event);
-    });
-// [AccelerometerEvent (x: 0.0, y: 9.8, z: 0.0)]
-
-    userAccelerometerEvents.listen((UserAccelerometerEvent event) {
-      Logger().w(print);
-    });
-// [UserAccelerometerEvent (x: 0.0, y: 0.0, z: 0.0)]
-
-    gyroscopeEvents.listen((GyroscopeEvent event) {
-      Logger().w(event);
-    });
-// [GyroscopeEvent (x: 0.0, y: 0.0, z: 0.0)]
-
-    magnetometerEvents.listen((MagnetometerEvent event) {
-      Logger().w(event);
-    });
-  }
 
   initScanBeacon() async {
     await flutterBeacon.initializeScanning;
     final regions = List<Region>.from(
       storage.beacons.map((element) => Region(identifier: element.name!, proximityUUID: element.uuid!)),
     );
-    regions.forEach((element) {
-      Logger().i(element.proximityUUID);
-    });
     isScanning.value = true;
     await flutterBeacon.setScanPeriod(100);
 
     _streamRanging = flutterBeacon.ranging(regions).listen((RangingResult result) async {
-      // Logger().w(result.beacons);
       if (result.beacons.isNotEmpty) {
         regionBeacons[result.beacons.first.macAddress!]!.add(result.beacons.first);
 
@@ -134,8 +105,8 @@ class HomeController extends BaseController with GetSingleTickerProviderStateMix
           colorData.value = nearestBeacon.accuracy < 1 ? uuidColorMap()[nearestBeacon.macAddress] ?? Colors.grey : Colors.grey;
 
           math.Vector3 location = await CustomMethod.calculateLocation(averageCalculatedBeacons, nearestBeacon);
-          xCoordinate.value = startXCoordinate + location.x * pxMetersCoeffisent;
-          yCoordinate.value = startYCoordinate + location.y * pxMetersCoeffisent;
+          xCoordinate.value = startXCoordinate + location.x * pxMetersCoefficient;
+          yCoordinate.value = startYCoordinate + location.y * pxMetersCoefficient;
 
           Logger().i("${xCoordinate.value} - ${yCoordinate.value}");
 
@@ -144,13 +115,8 @@ class HomeController extends BaseController with GetSingleTickerProviderStateMix
             "DC:0D:30:0F:AC:25": [],
             "DC:0D:30:0F:AB:8B": [],
             "DC:0D:30:0F:AB:97": [],
-            // "CF:E1:37:E3:F9:BF": [],
-            // "ED:90:C1:6E:7F:22": [],
-            // "D6:3A:3D:19:BE:DD": [],
           };
         }
-        // _beaconRSSIs.add(result.beacons.)
-        // _beacons.sort(_compareParameters);
       }
     });
   }
@@ -168,9 +134,6 @@ class HomeController extends BaseController with GetSingleTickerProviderStateMix
   "DC:0D:30:0F:AC:25": Colors.yellow,
   "DC:0D:30:0F:AB:8B": Colors.orange,
   "DC:0D:30:0F:AB:97": Colors.red,
-  // "CF:E1:37:E3:F9:BF": [],
-  // "ED:90:C1:6E:7F:22": [],
-  // "D6:3A:3D:19:BE:DD": [],
   };
 
   colorMap() {

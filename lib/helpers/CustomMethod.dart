@@ -3,15 +3,18 @@ import 'dart:math';
 import 'package:equations/equations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_beacon/flutter_beacon.dart';
+import 'package:get/get.dart';
 import 'package:location_via_ble_app/models/BeaconLocationModel.dart';
+import 'package:location_via_ble_app/services/StorageService.dart';
 import 'package:logger/logger.dart';
 import 'package:vector_math/vector_math_64.dart';
 
 import 'GeneralHelper.dart';
 
 class CustomMethod {
-  final double pxMetersCoeffisent = 0.4706;
+  final double pxMetersCoefficient = 0.4706;
   static const platform = MethodChannel('BEACONS');
+  static final storage = Get.find<StorageService>();
 
   static Future<Vector3> calculateLocation(List<Beacon> beacons, Beacon beacon) async {
     List<BeaconLocationModel> beaconLocations = GeneralHelper.getBeaconCoordinates(beacons);
@@ -30,15 +33,15 @@ class CustomMethod {
   static Vector3 calculateLeastNearing(Vector3 location, Beacon beacon) {
     double solution = 0.0;
     BeaconLocationModel nearestBeacon = BeaconLocationModel(
-        xCoordinate: BeaconLocationModel.beaconsCoordinates[beacon.macAddress]!.xCoordinate,
-        yCoordinate: BeaconLocationModel.beaconsCoordinates[beacon.macAddress]!.yCoordinate,
+        xCoordinate: storage.beacons.firstWhere((element) => element.macAddress == beacon.macAddress).xCoordinate,
+        yCoordinate: storage.beacons.firstWhere((element) => element.macAddress == beacon.macAddress).yCoordinate,
         zCoordinate: 0,
         distance: beacon.accuracy);
     double alpha = atan(((location.y - nearestBeacon.yCoordinate).abs()) / (location.x - nearestBeacon.xCoordinate).abs());
 
     // if (nearestBeacon.distance! >= 1) {
     final equation =
-    Quadratic.realEquation(a: (location.y - nearestBeacon.yCoordinate), b: (-1) * sin(alpha), c: (-1) * nearestBeacon.distance! * sin(alpha));
+        Quadratic.realEquation(a: (location.y - nearestBeacon.yCoordinate), b: (-1) * sin(alpha), c: (-1) * nearestBeacon.distance! * sin(alpha));
 
     for (final root in equation.solutions()) {
       if (root.real > 0) {

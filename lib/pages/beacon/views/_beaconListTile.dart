@@ -66,6 +66,10 @@ class BeaconListTile extends StatelessWidget {
             const SizedBox(height: 3),
             Text(beacon.uuid ?? "", style: const TextStyle(fontSize: 15)),
             const SizedBox(height: 10),
+            const Text("Beacon MAC Address:", style: TextStyle(fontSize: 13, color: Colors.lightBlueAccent)),
+            const SizedBox(height: 3),
+            Text(beacon.macAddress ?? "", style: const TextStyle(fontSize: 15)),
+            const SizedBox(height: 10),
             const Text("Beacon Cordinates:", style: TextStyle(fontSize: 13, color: Colors.lightBlueAccent)),
             const SizedBox(height: 3),
             Row(
